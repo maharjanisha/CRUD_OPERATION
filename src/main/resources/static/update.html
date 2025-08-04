@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Search & Update User</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+<div class="container mt-5">
+  <h3 class="text-center mb-4">Search and Update User</h3>
+
+  <!-- Search Section -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Search User by Email</h5>
+      <div class="input-group">
+        <input type="email" id="searchEmail" class="form-control" placeholder="Enter email to search" required />
+        <button id="searchBtn" class="btn btn-primary">Search</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="responseMessage"></div>
+
+  <!-- Update Form -->
+  <form id="updateUserForm" style="display:none;">
+    <div class="mb-3">
+      <label for="inputname" class="form-label">Name</label>
+      <input type="text" id="inputname" class="form-control" placeholder="Enter name" required />
+    </div>
+    <div class="mb-3">
+      <label for="inputemail" class="form-label">Email (readonly)</label>
+      <input type="email" id="inputemail" class="form-control" readonly />
+    </div>
+    <div class="mb-3">
+      <label for="inputage" class="form-label">Age</label>
+      <input type="number" id="inputage" class="form-control" placeholder="Enter age" required />
+    </div>
+    <div class="mb-3">
+      <label for="inputphone" class="form-label">Phone</label>
+      <input type="text" id="inputphone" class="form-control" placeholder="Enter phone number" required />
+    </div>
+    <div class="text-center">
+      <button type="submit" class="btn btn-success" id="updateBtn">Update</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  const msgDiv = document.getElementById("responseMessage");
+  const updateForm = document.getElementById("updateUserForm");
+  const searchBtn = document.getElementById("searchBtn");
+  const searchEmailInput = document.getElementById("searchEmail");
+
+  // Search User by email
+  searchBtn.addEventListener("click", async () => {
+      const email = searchEmailInput.value.trim();
+      msgDiv.innerHTML = "";
+      updateForm.style.display = "none";
+
+      if (!email) {
+          msgDiv.innerHTML = `<div class="alert alert-warning">Please enter an email to search.</div>`;
+          return;
+      }
+
+      try {
+          const response = await fetch(`/user/search/${encodeURIComponent(email)}`);
+          if (response.ok) {
+              const user = await response.json();
+
+              // Populate form and show it
+              document.getElementById("inputname").value = user.name;
+              document.getElementById("inputemail").value = user.email;
+              document.getElementById("inputage").value = user.age;
+              document.getElementById("inputphone").value = user.phone;
+
+              updateForm.style.display = "block";
+              msgDiv.innerHTML = `<div class="alert alert-info">User found. You can update their details now.</div>`;
+          } else {
+              msgDiv.innerHTML = `<div class="alert alert-danger">No user found with this email.</div>`;
+          }
+      } catch (error) {
+          msgDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+      }
+  });
+
+  // Handle update form submission
+  updateForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById("inputemail").value.trim();
+      const user = {
+          name: document.getElementById("inputname").value.trim(),
+          age: parseInt(document.getElementById("inputage").value),
+          phone: document.getElementById("inputphone").value.trim(),
+      };
+
+      try {
+          const response = await fetch(`/user/update/${encodeURIComponent(email)}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(user),
+          });
+
+          const resultText = await response.text();
+
+          if (response.ok) {
+              msgDiv.innerHTML = `<div class="alert alert-success">${resultText}</div>`;
+              updateForm.style.display = "none";
+              searchEmailInput.value = "";
+          } else {
+              msgDiv.innerHTML = `<div class="alert alert-danger">${resultText}</div>`;
+          }
+      } catch (error) {
+          msgDiv.innerHTML = `<div class="alert alert-danger">Request failed: ${error.message}</div>`;
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
